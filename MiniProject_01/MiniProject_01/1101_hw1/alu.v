@@ -14,7 +14,7 @@ module alu (
 // Wires and Registers
 // ---------------------------------------------------------------------------
 reg  [11:0] o_data_w, o_data_r;
-reg         o_valid_w, o_valid_r, v_reg; 
+reg         o_valid_w, o_valid_r, valid_reg; 
 reg         o_overflow_w, o_overflow_r;  
 // ---- Add your own wires and registers here if needed ---- //
 reg signed [31:0] accum_r; 
@@ -33,23 +33,20 @@ assign o_data = o_data_r;
 assign o_overflow = o_overflow_r;
 // ---- Add your own wire data assignments here if needed ---- //
 
-   // assign  abs_a = (i_data_a < 0) ? -i_data_a : i_data_a;
-// put these near the top with your other regs/wires
-
 // ---------------------------------------------------------------------------
 // Combinational Blocks
 // ---------------------------------------------------------------------------
 // ---- Write your conbinational block design here ---- //
 always@(*) begin
 mac_ovf_w = mac_ovf_r;
-if (v_reg && prev_i_inst == 3'b011 && inst_reg != 3'b011)
+if (valid_reg && prev_i_inst == 3'b011 && inst_reg != 3'b011)
   mac_ovf_w = 1'b0; 
 
     o_data_w = 12'b0; 
     o_overflow_w = 1'b0;
     o_valid_w = 1'b0; 
     accum_w = accum_r;
-    if (v_reg)begin //i_valid) begin
+    if (valid_reg)begin 
     o_valid_w = 1'b1;
     case(inst_reg)
 	3'b000: begin 
@@ -128,8 +125,8 @@ always@(posedge i_clk or negedge i_rst_n) begin
 	prev_i_inst <= 3'b000;
 	mac_ovf_r <= 1'b0; 
     end else begin
-	o_valid_r <= v_reg; 
-	if (v_reg) begin 
+	o_valid_r <= valid_reg; 
+	if (valid_reg) begin 
         o_data_r <= o_data_w;
         o_overflow_r <= o_overflow_w;
         o_valid_r <= o_valid_w; 
@@ -137,9 +134,9 @@ always@(posedge i_clk or negedge i_rst_n) begin
       	prev_i_inst <= inst_reg;	
 end
 end
-	if (v_reg && inst_reg == 3'b011) 
+	if (valid_reg && inst_reg == 3'b011) 
 	accum_r <= accum_w;
-if (v_reg) begin 
+if (valid_reg) begin 
 	if (inst_reg == 3'b011)
       mac_ovf_r <= mac_ovf_w;
     else
@@ -147,28 +144,15 @@ if (v_reg) begin
     end
 end
 
-/*always@(negedge i_clk or negedge i_rst_n)begin 
-
-	if (!i_rst_n) begin 
-		v_reg <= 0; 
-	end else begin 
-	v_reg <= i_valid;
-	if (i_valid) begin 
-	reg_a <= i_data_a; 
-	reg_b <= i_data_b;
-       inst_reg <= i_inst; 	
-end
-end
-end*/
 
 always @(negedge i_clk or negedge i_rst_n) begin
   if (!i_rst_n) begin
-    v_reg    <= 1'b0;
+    valid_reg    <= 1'b0;
     reg_a    <= 12'sd0;
     reg_b    <= 12'sd0;
     inst_reg <= 3'd0;
   end else begin
-    v_reg <= i_valid;
+    valid_reg <= i_valid;
     if (i_valid) begin
       reg_a    <= i_data_a;
       reg_b    <= i_data_b;
